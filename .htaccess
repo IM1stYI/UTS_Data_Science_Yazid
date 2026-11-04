@@ -1,0 +1,21 @@
+# ===== Keamanan untuk Apache / LiteSpeed (cPanel) =====
+Options -Indexes
+DirectoryIndex index.php
+
+# File konfigurasi, skema, data, dan skrip jawaban tidak boleh dibuka langsung dari browser
+# (skrip jawaban tetap bisa dijalankan lewat dashboard setelah login, atau via CLI)
+<FilesMatch "^(config.*\.php|koneksi\.php|schema\.sql|README\.md|dataset_mahasiswa\.csv|bagian2-UTS[0-9]\.php|tampulan-bagian2-UTS\.html)$">
+    Require all denied
+</FilesMatch>
+
+# Header keamanan dasar
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "same-origin"
+</IfModule>
+
+# Paksa HTTPS di hosting: hapus tanda # pada 3 baris berikut setelah SSL aktif
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

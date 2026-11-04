@@ -1,0 +1,503 @@
+<?php
+// Halaman Utama Dashboard Data Science (Tanpa Database)
+// Anda dapat menjalankan file ini di server lokal (XAMPP/MAMP/Laragon)
+// Seluruh data disimulasikan menggunakan Array dan diproses di memori browser.
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Science UTS Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .table-container::-webkit-scrollbar { width: 6px; height: 6px; }
+        .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .table-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">Data Science UTS Dashboard</h1>
+                    <p class="text-xs text-slate-500">Visualisasi 5 Tahapan Pipeline</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav class="flex space-x-1 overflow-x-auto pb-2" aria-label="Tabs">
+                <button onclick="switchTab('tab1')" id="btn-tab1" class="tab-btn active bg-slate-100 text-blue-700 px-4 py-2 font-medium text-sm rounded-md transition-colors whitespace-nowrap">1. Data Profiling (CSV)</button>
+                <button onclick="switchTab('tab2')" id="btn-tab2" class="tab-btn text-slate-500 hover:text-slate-700 px-4 py-2 font-medium text-sm rounded-md transition-colors whitespace-nowrap">2. Imputasi & Normalisasi</button>
+                <button onclick="switchTab('tab3')" id="btn-tab3" class="tab-btn text-slate-500 hover:text-slate-700 px-4 py-2 font-medium text-sm rounded-md transition-colors whitespace-nowrap">3. Kalkulator Statistik</button>
+                <button onclick="switchTab('tab4')" id="btn-tab4" class="tab-btn text-slate-500 hover:text-slate-700 px-4 py-2 font-medium text-sm rounded-md transition-colors whitespace-nowrap">4. Train-Test Split</button>
+                <button onclick="switchTab('tab5')" id="btn-tab5" class="tab-btn text-slate-500 hover:text-slate-700 px-4 py-2 font-medium text-sm rounded-md transition-colors whitespace-nowrap">5. Data Pipeline</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <div id="tab1" class="tab-content active space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-800">Eksplorasi Awal Dataset (CSV)</h2>
+                    <p class="text-sm text-slate-500">Simulasi pembacaan file dataset_mahasiswa.csv</p>
+                </div>
+                <button onclick="runTab1()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto">Jalankan Skrip</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="t1-stats" style="display: none;">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <p class="text-xs text-slate-500 uppercase font-semibold">Total Baris</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1" id="t1-total">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 md:col-span-2">
+                    <p class="text-xs text-slate-500 uppercase font-semibold">Tipe Data Terdeteksi</p>
+                    <div id="t1-types" class="mt-2 flex gap-2 flex-wrap"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="t1-table-container" style="display: none;">
+                <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                    <h3 class="text-sm font-semibold text-slate-800">Pratinjau 5 Baris Pertama (Head)</h3>
+                </div>
+                <div class="table-container overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-100 text-slate-500" id="t1-thead"></thead>
+                        <tbody class="divide-y divide-slate-200 text-slate-700" id="t1-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab2" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-800">Pembersihan Data & Normalisasi</h2>
+                    <p class="text-sm text-slate-500">Menangani Missing Values dan Normalisasi Min-Max</p>
+                </div>
+                <button onclick="runTab2()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto">Jalankan Skrip</button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="t2-results" style="display: none;">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-800 border-b pb-2 mb-3">1. Data Awal</h3>
+                    <div class="font-mono text-sm bg-slate-50 p-3 rounded text-slate-600 break-words whitespace-normal" id="t2-raw"></div>
+                    <div class="mt-4 pt-4 border-t border-slate-100">
+                        <p class="text-xs text-slate-500">Nilai Mean Valid:</p>
+                        <p class="text-lg font-semibold text-blue-600" id="t2-mean">-</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-800 border-b pb-2 mb-3">2. Hasil Imputasi Data</h3>
+                    <div class="font-mono text-sm bg-blue-50 p-3 rounded text-blue-800 break-words whitespace-normal" id="t2-imputed"></div>
+                    <p class="text-xs text-slate-500 mt-2">*Nilai null/kosong diganti dengan Mean</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-800 border-b pb-2 mb-3">3. Normalisasi Min-Max (0-1)</h3>
+                    <div class="font-mono text-xs bg-emerald-50 p-3 rounded text-emerald-800 break-words whitespace-normal" id="t2-norm"></div>
+                    <div class="flex gap-4 mt-3">
+                        <span class="text-xs bg-slate-100 px-2 py-1 rounded">Min: <b id="t2-min">0</b></span>
+                        <span class="text-xs bg-slate-100 px-2 py-1 rounded">Max: <b id="t2-max">0</b></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab3" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-800">Kalkulator Statistik Deskriptif</h2>
+                    <p class="text-sm text-slate-500">Mean, Median, Modus, Std Deviasi & ASCII Chart</p>
+                </div>
+                <button onclick="runTab3()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto">Hitung Statistik</button>
+            </div>
+            
+            <div id="t3-results" style="display: none;" class="space-y-6">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs text-slate-500 uppercase font-semibold">Dataset Numerik</p>
+                    <p class="font-mono text-sm mt-1 text-slate-700 break-words whitespace-normal" id="t3-dataset"></p>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-l-blue-500 border-slate-200">
+                        <p class="text-xs text-slate-500">Mean</p>
+                        <p class="text-2xl font-bold text-slate-800" id="t3-mean">-</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-l-emerald-500 border-slate-200">
+                        <p class="text-xs text-slate-500">Median</p>
+                        <p class="text-2xl font-bold text-slate-800" id="t3-median">-</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-l-purple-500 border-slate-200">
+                        <p class="text-xs text-slate-500">Modus</p>
+                        <p class="text-xl font-bold text-slate-800" id="t3-mode">-</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-l-rose-500 border-slate-200">
+                        <p class="text-xs text-slate-500">Std Deviasi (n-1)</p>
+                        <p class="text-2xl font-bold text-slate-800" id="t3-std">-</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <h3 class="text-slate-800 font-semibold border-b border-slate-200 pb-3 mb-4 text-sm">Visualisasi Distribusi Frekuensi</h3>
+                    <div id="t3-chart" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab4" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-800">Train-Test Split Algorithm</h2>
+                    <p class="text-sm text-slate-500">Membagi dataset menjadi 80% Latih dan 20% Uji</p>
+                </div>
+                <button onclick="runTab4()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto">Split Data (80/20)</button>
+            </div>
+            
+            <div id="t4-results" style="display: none;" class="space-y-6">
+                <!-- Progress Bar -->
+                <div class="w-full h-6 bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                    <div id="t4-barTrain" class="h-full bg-emerald-500 text-xs text-white font-medium flex items-center justify-center transition-all duration-1000 w-0">Train (80%)</div>
+                    <div id="t4-barTest" class="h-full bg-purple-500 text-xs text-white font-medium flex items-center justify-center transition-all duration-1000 w-0">Test (20%)</div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Table Train -->
+                    <div class="bg-white rounded-xl shadow-sm border border-emerald-200 overflow-hidden flex flex-col">
+                        <div class="px-4 py-3 bg-emerald-50 flex justify-between items-center">
+                            <h3 class="text-sm font-semibold text-emerald-800">Data Latih (<span id="t4-c-train">0</span> baris)</h3>
+                            <span class="text-[10px] uppercase font-bold tracking-wider bg-emerald-200 text-emerald-700 px-2 py-1 rounded">Top 5</span>
+                        </div>
+                        <div class="table-container overflow-x-auto p-0">
+                            <table class="w-full text-left text-xs whitespace-nowrap">
+                                <thead class="bg-slate-50 text-slate-500 border-y border-emerald-100">
+                                    <tr><th class="px-4 py-2">ID</th><th class="px-4 py-2">Fitur X</th><th class="px-4 py-2">Fitur Y</th><th class="px-4 py-2">Label</th></tr>
+                                </thead>
+                                <tbody id="t4-train-body" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Table Test -->
+                    <div class="bg-white rounded-xl shadow-sm border border-purple-200 overflow-hidden flex flex-col">
+                        <div class="px-4 py-3 bg-purple-50 flex justify-between items-center">
+                            <h3 class="text-sm font-semibold text-purple-800">Data Uji (<span id="t4-c-test">0</span> baris)</h3>
+                            <span class="text-[10px] uppercase font-bold tracking-wider bg-purple-200 text-purple-700 px-2 py-1 rounded">Top 5</span>
+                        </div>
+                        <div class="table-container overflow-x-auto p-0">
+                            <table class="w-full text-left text-xs whitespace-nowrap">
+                                <thead class="bg-slate-50 text-slate-500 border-y border-purple-100">
+                                    <tr><th class="px-4 py-2">ID</th><th class="px-4 py-2">Fitur X</th><th class="px-4 py-2">Fitur Y</th><th class="px-4 py-2">Label</th></tr>
+                                </thead>
+                                <tbody id="t4-test-body" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab5" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-800">Simulasi Data Pipeline Sederhana</h2>
+                    <p class="text-sm text-slate-500">Ingestion &rarr; Audit &rarr; Cleaning &rarr; Siap Analisis</p>
+                </div>
+                <button onclick="runTab5()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto">Jalankan Pipeline</button>
+            </div>
+
+            <div id="t5-results" style="display: none;" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-center">
+                        <p class="text-xs text-slate-500 uppercase font-bold">Total Diterima</p>
+                        <p class="text-3xl font-bold text-slate-700 mt-1" id="t5-total">0</p>
+                    </div>
+                    <div class="bg-rose-50 p-4 rounded-xl border border-rose-200 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div class="absolute left-0 top-0 h-full w-1 bg-rose-500"></div>
+                        <p class="text-xs text-rose-600 uppercase font-bold">Ditolak (Tidak Valid)</p>
+                        <p class="text-3xl font-bold text-rose-700 mt-1" id="t5-rejected">0</p>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div class="absolute left-0 top-0 h-full w-1 bg-emerald-500"></div>
+                        <p class="text-xs text-emerald-600 uppercase font-bold">Valid & Siap Analisis</p>
+                        <p class="text-3xl font-bold text-emerald-700 mt-1" id="t5-valid">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between">
+                        <h3 class="text-sm font-semibold text-slate-800">Dataset Final (Siap Analisis)</h3>
+                        <span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-medium" id="t5-status">Selesai</span>
+                    </div>
+                    <div class="table-container overflow-x-auto p-0">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-100 text-slate-500">
+                                <tr>
+                                    <th class="px-4 py-2 font-medium">ID Transaksi</th>
+                                    <th class="px-4 py-2 font-medium">Amount</th>
+                                    <th class="px-4 py-2 font-medium">Status</th>
+                                    <th class="px-4 py-2 font-medium">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="t5-tbody" class="divide-y divide-slate-200 text-slate-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Fungsi untuk navigasi antar tab
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-slate-100', 'text-blue-700');
+                el.classList.add('text-slate-500');
+            });
+            
+            document.getElementById(tabId).classList.add('active');
+            const btn = document.getElementById('btn-' + tabId);
+            btn.classList.remove('text-slate-500');
+            btn.classList.add('bg-slate-100', 'text-blue-700');
+        }
+
+        function runTab1() {
+            // Simulasi data CSV yang diload dari dataset_mahasiswa.csv
+            const csvData = [
+                { nim: '101', nama: 'Budi', nilai_tugas: '85', nilai_ujian: '90' },
+                { nim: '102', nama: 'Siti', nilai_tugas: '92', nilai_ujian: '88' },
+                { nim: '103', nama: 'Andi', nilai_tugas: '78', nilai_ujian: '85' },
+                { nim: '104', nama: 'Rina', nilai_tugas: '88', nilai_ujian: '95' },
+                { nim: '105', nama: 'Joko', nilai_tugas: '70', nilai_ujian: '75' },
+                { nim: '106', nama: 'Dewi', nilai_tugas: '95', nilai_ujian: '98' }
+            ];
+
+            const columns = Object.keys(csvData[0]);
+            
+            document.getElementById('t1-stats').style.display = 'grid';
+            document.getElementById('t1-table-container').style.display = 'block';
+            document.getElementById('t1-total').innerText = csvData.length;
+
+            let typesHTML = '';
+            columns.forEach(col => {
+                const val = csvData[0][col];
+                const type = !isNaN(val) ? 'Integer' : 'String';
+                typesHTML += `<span class="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded border border-blue-200"><b>${col}</b>: ${type}</span>`;
+            });
+            document.getElementById('t1-types').innerHTML = typesHTML;
+
+            let thead = '<tr>';
+            columns.forEach(col => thead += `<th class="px-6 py-3 font-medium">${col}</th>`);
+            thead += '</tr>';
+            document.getElementById('t1-thead').innerHTML = thead;
+
+            let tbody = '';
+            csvData.slice(0, 5).forEach(row => {
+                tbody += '<tr class="hover:bg-slate-50">';
+                columns.forEach(col => tbody += `<td class="px-6 py-3">${row[col]}</td>`);
+                tbody += '</tr>';
+            });
+            document.getElementById('t1-tbody').innerHTML = tbody;
+        }
+
+        function runTab2() {
+            const rawData = [80, null, 75, "", 90, null, 65, 85, 100];
+            
+            const rawDisplay = rawData.map(v => v === null ? "null" : (v === "" ? '""' : v));
+            document.getElementById('t2-raw').innerText = `[${rawDisplay.join(', ')}]`;
+
+            // Hitung Mean
+            let sum = 0; let count = 0;
+            rawData.forEach(v => {
+                if (v !== null && v !== "") {
+                    sum += v; count++;
+                }
+            });
+            const mean = count > 0 ? sum / count : 0;
+            document.getElementById('t2-mean').innerText = mean.toFixed(2);
+
+            // Proses Imputasi
+            const imputed = rawData.map(v => (v === null || v === "") ? mean : v);
+            document.getElementById('t2-imputed').innerText = `[${imputed.join(', ')}]`;
+
+            // Proses Normalisasi
+            const max = Math.max(...imputed);
+            const min = Math.min(...imputed);
+            const range = max - min;
+            const normalized = imputed.map(v => range === 0 ? 0 : parseFloat(((v - min) / range).toFixed(4)));
+
+            document.getElementById('t2-norm').innerText = `[${normalized.join(', ')}]`;
+            document.getElementById('t2-min').innerText = min;
+            document.getElementById('t2-max').innerText = max;
+
+            document.getElementById('t2-results').style.display = 'grid';
+        }
+
+        function runTab3() {
+            const data = [65, 72, 85, 92, 95, 88, 76, 60, 68, 74, 82, 89, 91, 100, 75, 85, 85, 90, 62, 78];
+            const n = data.length;
+            
+            document.getElementById('t3-dataset').innerText = `[${data.join(', ')}]`;
+
+            const sum = data.reduce((a, b) => a + b, 0);
+            const mean = sum / n;
+            document.getElementById('t3-mean').innerText = mean.toFixed(2);
+
+            const sorted = [...data].sort((a, b) => a - b);
+            const mid = Math.floor(n / 2);
+            const median = n % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+            document.getElementById('t3-median').innerText = median;
+
+            const freqs = {};
+            let maxFreq = 0;
+            data.forEach(v => {
+                freqs[v] = (freqs[v] || 0) + 1;
+                if(freqs[v] > maxFreq) maxFreq = freqs[v];
+            });
+            const modes = Object.keys(freqs).filter(k => freqs[k] === maxFreq);
+            document.getElementById('t3-mode').innerText = modes.join(', ');
+
+            const sumSq = data.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0);
+            const stdDev = Math.sqrt(sumSq / (n - 1));
+            document.getElementById('t3-std').innerText = stdDev.toFixed(2);
+
+            const bins = { '< 60': 0, '60-69': 0, '70-79': 0, '80-89': 0, '90-100': 0 };
+            data.forEach(val => {
+                if(val < 60) bins['< 60']++;
+                else if(val <= 69) bins['60-69']++;
+                else if(val <= 79) bins['70-79']++;
+                else if(val <= 89) bins['80-89']++;
+                else if(val <= 100) bins['90-100']++;
+            });
+
+            let chartHTML = "";
+            let maxCount = Math.max(...Object.values(bins));
+            
+            for (const [range, count] of Object.entries(bins)) {
+                if (range === '< 60' && count === 0) continue;
+                
+                // Menghitung persentase lebar batang relatif terhadap nilai tertinggi
+                const widthPct = maxCount === 0 ? 0 : (count / maxCount) * 100;
+                
+                chartHTML += `
+                    <div class="flex items-center gap-4 text-sm">
+                        <div class="w-16 text-right font-medium text-slate-600">${range}</div>
+                        <div class="flex-grow flex items-center gap-2">
+                            <div class="h-6 bg-emerald-500 rounded-md transition-all duration-1000 ease-out" style="width: ${widthPct}%"></div>
+                            <span class="text-xs text-slate-500 font-semibold">${count}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            document.getElementById('t3-chart').innerHTML = chartHTML;
+            document.getElementById('t3-results').style.display = 'block';
+        }
+
+        function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        
+        function runTab4() {
+            const dataset = [];
+            for(let i=1; i<=50; i++){
+                dataset.push({
+                    id: `ID-${String(i).padStart(3, '0')}`,
+                    fitur_x: rand(10, 100),
+                    fitur_y: rand(100, 500),
+                    label: i % 2 === 0 ? 'Positif' : 'Negatif'
+                });
+            }
+
+            // Simulasi proses shuffle Array
+            let indices = Array.from({length: 50}, (_, i) => i);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            
+            const testCount = Math.round(50 * 0.2);
+            const testSet = indices.slice(0, testCount).map(idx => dataset[idx]);
+            const trainSet = indices.slice(testCount).map(idx => dataset[idx]);
+
+            document.getElementById('t4-results').style.display = 'block';
+            
+            setTimeout(() => {
+                document.getElementById('t4-barTrain').style.width = '80%';
+                document.getElementById('t4-barTest').style.width = '20%';
+            }, 50);
+
+            document.getElementById('t4-c-train').innerText = trainSet.length;
+            document.getElementById('t4-c-test').innerText = testSet.length;
+
+            const renderTb = (data, elId) => {
+                let html = '';
+                data.slice(0,5).forEach(row => {
+                    const badge = row.label === 'Positif' ? 'text-blue-700 bg-blue-100' : 'text-rose-700 bg-rose-100';
+                    html += `<tr class="hover:bg-slate-50">
+                        <td class="px-4 py-2 font-mono">${row.id}</td>
+                        <td class="px-4 py-2">${row.fitur_x}</td>
+                        <td class="px-4 py-2">${row.fitur_y}</td>
+                        <td class="px-4 py-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${badge}">${row.label}</span></td>
+                    </tr>`;
+                });
+                document.getElementById(elId).innerHTML = html;
+            }
+            renderTb(trainSet, 't4-train-body');
+            renderTb(testSet, 't4-test-body');
+        }
+
+        function runTab5() {
+            const rawTransactions = [
+                { id: "TX001", amount: 50000, status: "success", date: "2026-10-21" },
+                { id: "TX002", amount: -10000, status: "success", date: "2026-10-21" }, // Invalid
+                { id: "TX003", amount: 150000, status: "pending", date: "2026-10-21" },
+                { id: "TX004", amount: null, status: "success", date: "2026-10-21" },   // Invalid
+                { id: "TX005", amount: 75000, status: "success", date: "2026-10-22" }
+            ];
+
+            let validData = [];
+            let rejectedCount = 0;
+
+            rawTransactions.forEach(row => {
+                let isValid = true;
+                if(!row.id) isValid = false;
+                if(row.amount === null || isNaN(row.amount) || row.amount <= 0) isValid = false;
+
+                if(isValid) {
+                    validData.push(row);
+                } else {
+                    rejectedCount++;
+                }
+            });
+
+            document.getElementById('t5-results').style.display = 'block';
+            document.getElementById('t5-total').innerText = rawTransactions.length;
+            document.getElementById('t5-valid').innerText = validData.length;
+            document.getElementById('t5-rejected').innerText = rejectedCount;
+
+            let tbody = '';
+            validData.forEach(row => {
+                tbody += `<tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 font-mono text-xs font-semibold text-slate-800">${row.id}</td>
+                    <td class="px-4 py-3">Rp ${row.amount.toLocaleString('id-ID')}</td>
+                    <td class="px-4 py-3"><span class="bg-slate-100 border border-slate-200 text-slate-600 px-2 py-1 rounded text-xs">${row.status}</span></td>
+                    <td class="px-4 py-3 text-slate-500">${row.date}</td>
+                </tr>`;
+            });
+            document.getElementById('t5-tbody').innerHTML = tbody;
+            document.getElementById('t5-status').innerText = "Status Akhir: Selesai - Data Siap Analisis";
+        }
+    </script>
+</body>
+</html>
